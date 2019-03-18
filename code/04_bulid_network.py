@@ -66,10 +66,10 @@ def export_three_matrix_file():
     automobile['CXSXRQ'] = automobile['CXSXRQ'].fillna(pd.to_datetime('2017-12-31'))
 
     for year in range(1985, 2015):
-        filter_data = automobile[((automobile['GGSXRQ'] <= pd.to_datetime(str(year))) & (
-                pd.to_datetime(str(year)) <= automobile['CXSXRQ'])) | (
-                                         (automobile['GGSXRQ'] <= pd.to_datetime(str(year + 2) + '-12-31')) & (
-                                         pd.to_datetime(str(year + 2) + '-12-31') <= automobile['CXSXRQ']))]
+        filter_data = automobile[((pd.to_datetime(str(year)) <= automobile['GGSXRQ']) & (
+                    automobile['GGSXRQ'] <= pd.to_datetime(str(year + 2) + '-12-31'))) | (
+                                             (pd.to_datetime(str(year)) <= automobile['CXSXRQ']) & (
+                                                 automobile['CXSXRQ'] <= pd.to_datetime(str(year + 2) + '-12-31')))]
         if not filter_data.empty:
             filter_data = filter_data.reset_index(drop=True)
             patent_matrix = relationship_matrix(filter_data)
@@ -86,10 +86,10 @@ def export_five_matrix_file():
     automobile['CXSXRQ'] = automobile['CXSXRQ'].fillna(pd.to_datetime('2017-12-31'))
 
     for year in range(1985, 2015):
-        filter_data = automobile[((automobile['GGSXRQ'] <= pd.to_datetime(str(year))) & (
-                pd.to_datetime(str(year)) <= automobile['CXSXRQ'])) | (
-                                         (automobile['GGSXRQ'] <= pd.to_datetime(str(year + 4) + '-12-31')) & (
-                                         pd.to_datetime(str(year + 4) + '-12-31') <= automobile['CXSXRQ']))]
+        filter_data = automobile[((pd.to_datetime(str(year)) <= automobile['GGSXRQ']) & (
+                    automobile['GGSXRQ'] <= pd.to_datetime(str(year + 4) + '-12-31'))) | (
+                                             (pd.to_datetime(str(year)) <= automobile['CXSXRQ']) & (
+                                                 automobile['CXSXRQ'] <= pd.to_datetime(str(year + 4) + '-12-31')))]
         if not filter_data.empty:
             filter_data = filter_data.reset_index(drop=True)
             patent_matrix = relationship_matrix(filter_data)
