@@ -48,7 +48,7 @@ def relationship_matrix(df):
         for j in range(i + 1, company_length):
             j_car_type = company_car_type_counts[company_index[j]]
             company_key = i_car_type.keys() & j_car_type.keys()
-            competition_intensity = sum([i_car_type[z] + j_car_type[z] for z in company_key])
+            competition_intensity = sum([i_car_type[z] * j_car_type[z] for z in company_key])
             patent_matrix_values[i, j] = competition_intensity
             patent_matrix_values[j, i] = competition_intensity
     patent_matrix_values = pd.DataFrame(patent_matrix_values)
