@@ -26,7 +26,7 @@ def create_diagrams(file_path):
     return graph
 
 
-def basic_information(graph, nodes, year):
+def basic_information(graph, nodes, year, indicator_type):
     betweenness_centrality = nx.betweenness_centrality(graph, weight='weight')
     local_reaching_centrality = [nx.local_reaching_centrality(graph, node, weight='weight') for node in nodes]
     triangles = nx.triangles(graph)
@@ -42,42 +42,76 @@ def basic_information(graph, nodes, year):
                          'triangles': [triangles[node] for node in nodes],
                          'clustering': [clustering[node] for node in nodes],
                          'tie_strength': [average_weight_dict[node] for node in nodes]})
+    if indicator_type == '三年期':
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/三年期/' + str(year) + '-' + str(year + 2) + '年竞争关系矩阵'
+    else:
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/五年期/' + str(year) + '-' + str(year + 4) + '年竞争关系矩阵'
+    folder = os.path.exists(excel_path)
+    if not folder:
+        os.makedirs(excel_path)
+    data.to_excel(excel_writer=excel_path + '/基础指标.xlsx',
+                  index=False)
     print(str(year) + '年' + 'basic_information' + '计算完毕！')
-    return data
 
 
-def constraint(graph, nodes, year):
+def constraint(graph, nodes, year, indicator_type):
     constraint = nx.constraint(graph, weight='weight')
     data = pd.DataFrame({'nodes': nodes,
                          'constraint': [constraint[node] for node in nodes]})
+    if indicator_type == '三年期':
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/三年期/' + str(year) + '-' + str(year + 2) + '年竞争关系矩阵'
+    else:
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/五年期/' + str(year) + '-' + str(year + 4) + '年竞争关系矩阵'
+    folder = os.path.exists(excel_path)
+    if not folder:
+        os.makedirs(excel_path)
+    data.to_excel(excel_writer=excel_path + '/constraint指标.xlsx',
+                  index=False)
     print(str(year) + '年' + 'constraint' + '计算完毕！')
-    return data
 
 
-def effective_size(graph, nodes, year):
+def effective_size(graph, nodes, year, indicator_type):
     effective_size = nx.effective_size(graph, weight='weight')
     data = pd.DataFrame({'nodes': nodes,
                          'effective_size': [effective_size[node] for node in nodes]})
+    if indicator_type == '三年期':
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/三年期/' + str(year) + '-' + str(year + 2) + '年竞争关系矩阵'
+    else:
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/五年期/' + str(year) + '-' + str(year + 4) + '年竞争关系矩阵'
+    folder = os.path.exists(excel_path)
+    if not folder:
+        os.makedirs(excel_path)
+    data.to_excel(excel_writer=excel_path + '/effective_size指标.xlsx',
+                  index=False)
     print(str(year) + '年' + 'effective_size' + '计算完毕！')
-    return data
 
 
-def calculate_networks_indicators(graph, year):
+def calculate_networks_indicators(graph, year, indicator_type):
     """计算基本网络指标"""
     degree_centrality = nx.degree_centrality(graph)
     nodes = list(degree_centrality.keys())
     network_indicators = pd.DataFrame({'nodes': nodes,
                                        'degree_centrality': [degree_centrality[node] for node in nodes]})
     p = Pool(4)
-    results = []
-    results.append(p.apply_async(basic_information, (graph, nodes, year)))
-    results.append(p.apply_async(constraint, (graph, nodes, year)))
-    results.append(p.apply_async(effective_size, (graph, nodes, year)))
+    p.apply_async(basic_information, (graph, nodes, year, indicator_type))
+    p.apply_async(constraint, (graph, nodes, year, indicator_type))
+    p.apply_async(effective_size, (graph, nodes, year, indicator_type))
     p.close()
     p.join()
 
-    for i in results:
-        network_indicators = pd.merge(left=network_indicators, right=i.get(), on=['nodes'], how='left')
+    if indicator_type == '三年期':
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/三年期/' + str(year) + '-' + str(year + 2) + '年竞争关系矩阵'
+    else:
+        excel_path = '../data/生成数据/04关系矩阵_中间指标/五年期/' + str(year) + '-' + str(year + 4) + '年竞争关系矩阵'
+    basic_information_indicators = pd.read_excel(io=excel_path + '/基础指标.xlsx',
+                                                 converters={'nodes': str})
+    constraint_indicators = pd.read_excel(io=excel_path + '/constraint指标.xlsx',
+                                          converters={'nodes': str})
+    effective_size_indicators = pd.read_excel(io=excel_path + '/effective_size指标.xlsx',
+                                              converters={'nodes': str})
+    network_indicators = pd.merge(left=network_indicators, right=basic_information_indicators, on=['nodes'], how='left')
+    network_indicators = pd.merge(left=network_indicators, right=constraint_indicators, on=['nodes'], how='left')
+    network_indicators = pd.merge(left=network_indicators, right=effective_size_indicators, on=['nodes'], how='left')
     network_indicators = network_indicators[
         ['nodes', 'degree_centrality', 'betweenness_centrality', 'local_reaching_centrality', 'constraint',
          'effective_size', 'triangles', 'clustering', 'tie_strength']]
@@ -90,7 +124,7 @@ def network_three_function(year):
     if os.path.exists(file_path):
         graph = create_diagrams(file_path)
         if not nx.is_empty(graph):
-            network_indicators = calculate_networks_indicators(graph, year)
+            network_indicators = calculate_networks_indicators(graph, year, '三年期')
             excel_path = '../data/生成数据/04关系矩阵_网络指标/三年期/' + file_path[-20:-4]
             folder = os.path.exists(excel_path)
             if not folder:
@@ -111,7 +145,8 @@ def network_three_function(year):
 
 def network_three_indicators():
     """计算3年窗口期的汽车新产品竞争网络的网络指标"""
-    network_three_function(1985)
+    # 从1985到2014(包含2014年)
+    network_three_function(1999)
 
 
 def network_five_function(year):
@@ -120,7 +155,7 @@ def network_five_function(year):
     if os.path.exists(file_path):
         graph = create_diagrams(file_path)
         if not nx.is_empty(graph):
-            network_indicators = calculate_networks_indicators(graph, year)
+            network_indicators = calculate_networks_indicators(graph, year, '五年期')
             excel_path = '../data/生成数据/04关系矩阵_网络指标/五年期/' + file_path[-20:-4]
             folder = os.path.exists(excel_path)
             if not folder:
@@ -141,6 +176,7 @@ def network_five_function(year):
 
 def network_five_indicators():
     """计算5年窗口期的汽车新产品竞争网络的网络指标"""
+    # 从1985到2014(包含2014年)
     network_five_function(1985)
 
 
@@ -153,10 +189,11 @@ def construct_panel_data():
     network_indicators_list = []
     for i in range(1985, 2014):
         file_path = '../data/生成数据/04关系矩阵_网络指标/三年期/' + str(i) + '-' + str(i + 2) + '年竞争关系矩阵/相关指标(企业名称).xlsx'
-        network_indicators = pd.read_excel(io=file_path)
-        network_indicators = network_indicators.rename(columns={'institution_name': 'OGNM', 'year': 'YEAR'})
-        del network_indicators['nodes']
-        network_indicators_list.append(network_indicators)
+        if os.path.exists(file_path):
+            network_indicators = pd.read_excel(io=file_path)
+            network_indicators = network_indicators.rename(columns={'institution_name': 'OGNM', 'year': 'YEAR'})
+            del network_indicators['nodes']
+            network_indicators_list.append(network_indicators)
 
     total_network_indicators = network_indicators_list[0]
     for i in range(1, len(network_indicators_list)):
@@ -179,10 +216,11 @@ def construct_panel_data():
     network_indicators_list = []
     for i in range(1985, 2014):
         file_path = '../data/生成数据/04关系矩阵_网络指标/五年期/' + str(i) + '-' + str(i + 4) + '年竞争关系矩阵/相关指标(企业名称).xlsx'
-        network_indicators = pd.read_excel(io=file_path)
-        network_indicators = network_indicators.rename(columns={'institution_name': 'OGNM', 'year': 'YEAR'})
-        del network_indicators['nodes']
-        network_indicators_list.append(network_indicators)
+        if os.path.exists(file_path):
+            network_indicators = pd.read_excel(io=file_path)
+            network_indicators = network_indicators.rename(columns={'institution_name': 'OGNM', 'year': 'YEAR'})
+            del network_indicators['nodes']
+            network_indicators_list.append(network_indicators)
 
     total_network_indicators = network_indicators_list[0]
     for i in range(1, len(network_indicators_list)):
