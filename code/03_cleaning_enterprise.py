@@ -52,34 +52,10 @@ def cleaning_vehicle():
                      index=False)
 
 
-def code_table():
-    """构建整车数据编码表"""
-    automobile = pd.read_excel(io='../data/生成数据/02整车数据/02整车数据(第二步修改).xlsx',
-                               usecols=[40],
-                               converters={'ZZCMC': lambda x: x.strip()})
-    automobile = automobile[automobile['ZZCMC'].notnull()].reset_index(drop=True)
-    automobile = automobile.drop_duplicates(subset=['ZZCMC'], keep='last').reset_index(drop=True)
-    automobile['ZZCMC编号'] = [i + 1 for i in range(len(automobile))]
-    automobile = automobile.rename(columns={'ZZCMC': 'ZZCMC企业名称'})
-
-    enterprise = pd.read_excel(io='../data/原始数据/02汽车面板数据以及说明/AmIndustryWTOPanel20181128.xlsx',
-                               usecols=[0, 2],
-                               converters={'IDNO': int,
-                                           'OGNM': lambda x: x.strip()})
-    enterprise = enterprise.drop_duplicates(subset=['OGNM'], keep='last').reset_index(drop=True)
-    enterprise = enterprise.rename(columns={'IDNO': 'AmIndustryWTOPanel中IDNO',
-                                            'OGNM': 'ZZCMC企业名称'})
-
-    automobile = pd.merge(left=automobile, right=enterprise, on=['ZZCMC企业名称'], how='left').reset_index(drop=True)
-    automobile = automobile[['ZZCMC企业名称', 'ZZCMC编号', 'AmIndustryWTOPanel中IDNO']]
-    automobile.to_excel(excel_writer='../data/生成数据/01企业名称修改表/09整车数据ZZCMCZ编码表.xlsx',
-                        index=False)
-
-
 if __name__ == "__main__":
     # 运行时间1分钟
     start_time = datetime.datetime.now()
-    code_table()
+    cleaning_vehicle()
     end_time = datetime.datetime.now()
     run_time = end_time - start_time
     print('程序开始时间：', start_time, '\n程序结束时间：', end_time, '\n程序运行时间：', run_time)
